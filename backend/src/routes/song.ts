@@ -159,9 +159,14 @@ router.post('/create-video', upload.single('audio'), async (req: Request, res: R
     // Get audio duration
     const duration = await getAudioDuration(audioPath);
 
-    // Step 1: Generate VTT subtitles from lyrics
+    // Step 1: Generate VTT subtitles from audio using Whisper (precise sync)
     const vttPath = path.join(projectDir, 'lyrics.vtt');
-    generateLyricsVTT(lyrics, duration, vttPath);
+    console.log('Transcribing audio with Whisper for precise subtitle sync...');
+    const whisperSuccess = await generateVTTWithWhisper(audioPath, lyrics, vttPath);
+    if (!whisperSuccess) {
+      console.log('Whisper failed, falling back to proportional timing...');
+      generateLyricsVTT(lyrics, duration, vttPath);
+    }
 
     // Step 2: OpenAI generates image prompts for each section
     const sections = extractSections(lyrics);
@@ -504,19 +509,136 @@ function getAudioDuration(audioPath: string): Promise<number> {
 }
 
 function generateLyricsVTT(lyrics: string, duration: number, outputPath: string) {
+  // Fallback: proportional word-based timing (used only if Whisper fails)
   const lines = lyrics.split('\n').filter(l => l.trim() && !l.trim().startsWith('['));
   const totalLines = lines.length;
-  const timePerLine = duration / totalLines;
   
+  if (totalLines === 0) {
+    fs.writeFileSync(outputPath, 'WEBVTT\n\n', 'utf-8');
+    return;
+  }
+
+  // Count words per line to distribute time proportionally
+  const wordCounts = lines.map(l => l.trim().split(/\s+/).length);
+  const totalWords = wordCounts.reduce((a, b) => a + b, 0);
+
+  const MIN_LINE_DURATION = 0.8;
+  const MAX_LINE_DURATION = 8.0;
+  const GAP = 0.05;
+
+  let durations = wordCounts.map(wc => {
+    const proportional = (wc / totalWords) * duration;
+    return Math.max(MIN_LINE_DURATION, Math.min(MAX_LINE_DURATION, proportional));
+  });
+
+  const sumDurations = durations.reduce((a, b) => a + b, 0);
+  const scale = duration / sumDurations;
+  durations = durations.map(d => d * scale);
+
   let vtt = 'WEBVTT\n\n';
   let t = 0;
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const lineDuration = durations[i] - GAP;
     const start = formatTime(t);
-    const end = formatTime(t + timePerLine);
-    vtt += `${start} --> ${end}\n${line.trim()}\n\n`;
-    t += timePerLine;
+    const end = formatTime(t + Math.max(lineDuration, 0.5));
+    vtt += `${start} --> ${end}\n${lines[i].trim()}\n\n`;
+    t += durations[i];
   }
   fs.writeFileSync(outputPath, vtt, 'utf-8');
+}
+
+/**
+ * Use OpenAI Whisper API to transcribe audio and get precise word-level timestamps.
+ * Returns a VTT file with accurate timing synced to what's actually being sung.
+ */
+async function generateVTTWithWhisper(audioPath: string, lyrics: string, outputPath: string): Promise<boolean> {
+  const apiKey = process.env.OPENAI_API_KEY || '';
+  if (!apiKey) return false;
+
+  try {
+    // Use Whisper API with word-level timestamps
+    const FormData = (await import('node:buffer')).File ? null : null;
+    const { readFileSync } = require('fs');
+    const audioBuffer = readFileSync(audioPath);
+    
+    // Create multipart form data manually
+    const boundary = '----FormBoundary' + Date.now().toString(36);
+    const fileName = path.basename(audioPath);
+    
+    const bodyParts: Buffer[] = [];
+    
+    // Add file field
+    bodyParts.push(Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fileName}"\r\nContent-Type: audio/mpeg\r\n\r\n`
+    ));
+    bodyParts.push(audioBuffer);
+    bodyParts.push(Buffer.from('\r\n'));
+    
+    // Add model field
+    bodyParts.push(Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n`
+    ));
+    
+    // Add response_format field (verbose_json gives us word timestamps)
+    bodyParts.push(Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="response_format"\r\n\r\nverbose_json\r\n`
+    ));
+    
+    // Add timestamp_granularities field for word-level
+    bodyParts.push(Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="timestamp_granularities[]"\r\n\r\nsegment\r\n`
+    ));
+
+    // Add language hint
+    bodyParts.push(Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nes\r\n`
+    ));
+    
+    // End boundary
+    bodyParts.push(Buffer.from(`--${boundary}--\r\n`));
+    
+    const body = Buffer.concat(bodyParts);
+    
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    });
+
+    if (!response.ok) {
+      console.error('Whisper API failed:', response.status);
+      return false;
+    }
+
+    const result: any = await response.json();
+    
+    // Result has segments with start/end times
+    if (!result.segments || result.segments.length === 0) {
+      return false;
+    }
+
+    // Build VTT from Whisper segments
+    let vtt = 'WEBVTT\n\n';
+    
+    for (const segment of result.segments) {
+      const start = formatTime(segment.start);
+      const end = formatTime(segment.end);
+      const text = segment.text.trim();
+      if (text) {
+        vtt += `${start} --> ${end}\n${text}\n\n`;
+      }
+    }
+
+    fs.writeFileSync(outputPath, vtt, 'utf-8');
+    console.log(`Whisper VTT generated with ${result.segments.length} segments`);
+    return true;
+  } catch (err) {
+    console.error('Whisper transcription error:', err);
+    return false;
+  }
 }
 
 function formatTime(s: number): string {

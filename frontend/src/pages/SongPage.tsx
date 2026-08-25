@@ -227,12 +227,31 @@ Include:
                 Copiar Prompt
               </button>
             </div>
-            {videoResult.thumbnailUrl && videoResult.thumbnailUrl.indexOf('FALLBACK') === -1 && (
-              <div>
-                <p style={{ color: '#6b7280', fontSize: '0.8rem' }}>Miniatura generada (puedes reemplazarla):</p>
-                <img src={videoResult.thumbnailUrl} alt="Miniatura" style={{ width: 280, borderRadius: 8, marginBottom: 8 }} />
-              </div>
-            )}
+
+            {/* Upload custom thumbnail */}
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ ...labelStyle, marginBottom: '0.75rem' }}>SUBE TU MINIATURA:</label>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.2rem', background: '#6366f1', color: 'white', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', transition: 'background 0.2s' }}>
+                📁 Seleccionar Imagen
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setVideoResult((prev: any) => ({ ...prev, customThumbnail: file, customThumbnailPreview: URL.createObjectURL(file) }));
+                  }
+                }} />
+              </label>
+              {videoResult.customThumbnailPreview && (
+                <div style={{ marginTop: '1rem' }}>
+                  <p style={{ color: '#10b981', fontSize: '0.8rem', marginBottom: '0.5rem' }}>✓ Miniatura cargada:</p>
+                  <img src={videoResult.customThumbnailPreview} alt="Tu miniatura" style={{ width: 320, borderRadius: 8, border: '2px solid #10b981' }} />
+                </div>
+              )}
+              {!videoResult.customThumbnailPreview && (
+                <p style={{ color: '#6b7280', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                  Tamaño recomendado: 1280×720px (JPG o PNG)
+                </p>
+              )}
+            </div>
           </div>
 
           {videoResult.metadata && (
@@ -295,16 +314,19 @@ Include:
             const privEl = document.getElementById('yt-privacy') as HTMLSelectElement;
             
             try {
+              const formData = new FormData();
+              formData.append('videoPath', videoResult.videoUrl);
+              formData.append('title', titleEl.value);
+              formData.append('description', descEl.value);
+              formData.append('tags', tagsEl.value);
+              formData.append('privacyStatus', privEl.value);
+              if (videoResult.customThumbnail) {
+                formData.append('thumbnail', videoResult.customThumbnail);
+              }
+
               const res = await fetch('/api/song/upload-youtube', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  videoPath: videoResult.videoUrl,
-                  title: titleEl.value,
-                  description: descEl.value,
-                  tags: tagsEl.value,
-                  privacyStatus: privEl.value,
-                }),
+                body: formData,
               });
               const data = await res.json();
               if (data.needsAuth) {
