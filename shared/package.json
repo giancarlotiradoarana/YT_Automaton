@@ -1,0 +1,8 @@
+{
+  "name": "shared",
+  "version": "1.0.0",
+  "description": "Tipos e interfaces compartidos para YouTube Video Automation",
+  "private": true,
+  "main": "index.ts",
+  "types": "index.ts"
+}
