@@ -689,18 +689,34 @@ async function downloadPexelsVideo(query: string, outputPath: string) {
  * POST /api/song/upload-youtube
  * Uploads a video to YouTube using OAuth2.
  * Accepts both JSON and FormData (for thumbnail upload).
+ * Supports: 'video' file upload (direct) OR 'videoPath' (relative API path).
  */
-router.post('/upload-youtube', upload.single('thumbnail'), async (req: Request, res: Response) => {
+router.post('/upload-youtube', upload.fields([{ name: 'thumbnail', maxCount: 1 }, { name: 'video', maxCount: 1 }]), async (req: Request, res: Response) => {
   try {
     const { videoPath, title, description, tags, privacyStatus } = req.body;
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
 
-    if (!videoPath || !title) {
-      res.status(400).json({ message: 'videoPath and title are required' });
+    if (!title) {
+      res.status(400).json({ message: 'title is required' });
       return;
     }
 
-    // Check if video file exists
-    const fullVideoPath = path.join(process.cwd(), videoPath.replace('/api/files/', 'temp/'));
+    // Resolve video path: prefer uploaded file, fallback to videoPath param
+    let fullVideoPath: string;
+    if (files?.['video']?.[0]) {
+      fullVideoPath = files['video'][0].path;
+    } else if (videoPath) {
+      if (videoPath.startsWith('/api/files/songs/')) {
+        const relative = videoPath.replace('/api/files/songs/', '');
+        fullVideoPath = path.join('C:\\ytvideos', relative);
+      } else {
+        fullVideoPath = path.join(process.cwd(), videoPath.replace('/api/files/', 'temp/'));
+      }
+    } else {
+      res.status(400).json({ message: 'Se requiere un archivo de video o videoPath' });
+      return;
+    }
+
     if (!fs.existsSync(fullVideoPath)) {
       res.status(400).json({ message: 'Video file not found: ' + fullVideoPath });
       return;
@@ -733,12 +749,27 @@ router.post('/upload-youtube', upload.single('thumbnail'), async (req: Request, 
           },
           status: {
             privacyStatus: privacyStatus || 'unlisted',
+            selfDeclaredMadeForKids: false,
           },
+          localizations: {},
         },
         media: {
           body: fs.createReadStream(fullVideoPath),
         },
       });
+
+      // Upload thumbnail if provided
+      const thumbFile = files?.['thumbnail']?.[0];
+      if (thumbFile && response.data.id) {
+        try {
+          await youtube.thumbnails.set({
+            videoId: response.data.id,
+            media: { body: fs.createReadStream(thumbFile.path) },
+          });
+        } catch (thumbErr: any) {
+          console.warn('Thumbnail upload failed:', thumbErr.message);
+        }
+      }
 
       res.json({
         success: true,

@@ -15,6 +15,109 @@ const LOVE_TYPES = [
 
 const STEPS = ['Tipo de Amor', 'Subir Audio', 'Crear Video', 'Resultado', 'YouTube'];
 
+const TRENDING_TAGS = 'musica romantica, balada triste, cancion de desamor, musica para llorar, amor perdido, balada romantica 2024, musica latina, latin ballad, sad song, heartbreak, nueva musica, canciones tristes, musica en español, desamor, love song';
+
+function YouTubeUploadStep({ videoResult, setVideoResult, songTitle }: { videoResult: any; setVideoResult: any; songTitle: string }) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [title, setTitle] = useState(videoResult.metadata?.title || songTitle || '');
+  const [description, setDescription] = useState(videoResult.metadata?.description || '');
+  const [tags, setTags] = useState(TRENDING_TAGS);
+  const [privacy, setPrivacy] = useState('unlisted');
+
+  async function handleUpload() {
+    if (uploading) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      // Use local file if available (uploaded manually), otherwise use server path
+      if (videoResult.localVideoFile) {
+        formData.append('video', videoResult.localVideoFile);
+      } else {
+        formData.append('videoPath', videoResult.videoUrl);
+      }
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('tags', tags);
+      formData.append('privacyStatus', privacy);
+      if (videoResult.customThumbnail) {
+        formData.append('thumbnail', videoResult.customThumbnail);
+      }
+
+      const res = await fetch('/api/song/upload-youtube', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.needsAuth) {
+        window.open(data.authUrl, '_blank');
+        alert('Autenticate en la ventana que se abrio. Despues vuelve y dale click de nuevo a Subir a YouTube.');
+      } else if (data.success) {
+        setUploadedUrl(data.videoUrl);
+      } else {
+        alert('Error: ' + (data.message || 'Fallo la subida'));
+      }
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  if (uploadedUrl) {
+    return (
+      <div style={{ ...cardStyle, textAlign: 'center' }}>
+        <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎉</div>
+        <h2 style={{ color: '#10b981' }}>Video subido exitosamente</h2>
+        <p style={{ color: '#9ca3af', marginBottom: '1rem' }}>Tu video ya está en YouTube:</p>
+        <a href={uploadedUrl} target="_blank" rel="noreferrer"
+          style={{ display: 'inline-block', padding: '0.75rem 2rem', background: '#dc2626', color: 'white', borderRadius: 10, fontWeight: 700, fontSize: '1rem', textDecoration: 'none', marginBottom: '0.5rem' }}>
+          ▶ Ver en YouTube
+        </a>
+        <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '0.75rem', wordBreak: 'break-all' }}>{uploadedUrl}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={cardStyle}>
+      <h2>Subir a YouTube</h2>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <label style={labelStyle}>TITULO:</label>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} />
+      </div>
+      <div style={{ marginBottom: '1rem' }}>
+        <label style={labelStyle}>DESCRIPCION:</label>
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} style={{ ...inputStyle, resize: 'vertical' }} />
+      </div>
+      <div style={{ marginBottom: '1rem' }}>
+        <label style={labelStyle}>TAGS (tendencias):</label>
+        <input value={tags} onChange={(e) => setTags(e.target.value)} style={inputStyle} />
+      </div>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <label style={labelStyle}>PRIVACIDAD:</label>
+        <select value={privacy} onChange={(e) => setPrivacy(e.target.value)} style={inputStyle}>
+          <option value="public">Publico</option>
+          <option value="unlisted">No listado</option>
+          <option value="private">Privado</option>
+        </select>
+      </div>
+
+      <button
+        onClick={handleUpload}
+        disabled={uploading}
+        style={{
+          padding: '0.75rem 2rem', borderRadius: 10, border: 'none', cursor: uploading ? 'not-allowed' : 'pointer',
+          fontWeight: 700, fontSize: '1rem', transition: 'all 0.2s',
+          background: uploading ? '#7f1d1d' : '#dc2626',
+          color: uploading ? '#fca5a5' : 'white',
+          opacity: uploading ? 0.85 : 1,
+        }}>
+        {uploading ? '⏳ Subiendo a YouTube...' : '🚀 Subir a YouTube'}
+      </button>
+    </div>
+  );
+}
+
 export default function SongPage() {
   const [step, setStep] = useState(0);
   const [selectedType, setSelectedType] = useState('');
@@ -26,6 +129,27 @@ export default function SongPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [videoResult, setVideoResult] = useState<any>(null);
   const [creatingVideo, setCreatingVideo] = useState(false);
+  const [copiedDesc, setCopiedDesc] = useState(false);
+  const [copiedLyrics, setCopiedLyrics] = useState(false);
+
+  // TEST ONLY: jump directly to YouTube upload step with existing video
+  function jumpToYouTubeTest() {
+    setSongTitle('Cenizas y Polvo');
+    setVideoResult({
+      videoUrl: '/api/files/songs/song_1787696154622/music_video.mp4',
+      shortUrl: '/api/files/songs/song_1787696154622/short.mp4',
+      thumbnailUrl: '/api/files/songs/song_1787696154622/thumbnail.png',
+      metadata: {
+        title: 'Cenizas y Polvo 💔 | DESAMOR | BALADA TRISTE',
+        description: 'Una balada que llega al alma.',
+        hashtags: '#MusicaRomantica #Balada #Desamor',
+        tags: ['musica romantica', 'balada', 'desamor'],
+        bestTime: 'Viernes 6-8pm',
+      },
+      imagesGenerated: 6,
+    });
+    setStep(4);
+  }
 
   async function handleGenerateLyrics() {
     if (!selectedType) return;
@@ -139,7 +263,9 @@ export default function SongPage() {
             <label style={labelStyle}>DESCRIPCION PARA SUNO:</label>
             <div style={copyBox}>
               <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontSize: '0.85rem', color: '#e2e8f0' }}>{sunoDesc}</pre>
-              <button style={copyBtn} onClick={() => { navigator.clipboard.writeText(sunoDesc); }}>Copiar</button>
+              <button style={copyBtn} onClick={() => { navigator.clipboard.writeText(sunoDesc); setCopiedDesc(true); setTimeout(() => setCopiedDesc(false), 2000); }}>
+                {copiedDesc ? '✓ Copiado' : 'Copiar'}
+              </button>
             </div>
           </div>
 
@@ -148,7 +274,9 @@ export default function SongPage() {
             <label style={labelStyle}>LETRA (copia en Suno con "+ Letra"):</label>
             <div style={copyBox}>
               <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontSize: '0.85rem', color: '#e2e8f0' }}>{lyrics}</pre>
-              <button style={copyBtn} onClick={() => { navigator.clipboard.writeText(lyrics); }}>Copiar</button>
+              <button style={copyBtn} onClick={() => { navigator.clipboard.writeText(lyrics); setCopiedLyrics(true); setTimeout(() => setCopiedLyrics(false), 2000); }}>
+                {copiedLyrics ? '✓ Copiado' : 'Copiar'}
+              </button>
             </div>
           </div>
 
@@ -285,65 +413,11 @@ Include:
 
       {/* STEP 4: Upload to YouTube */}
       {step === 4 && videoResult && (
-        <div style={cardStyle}>
-          <h2>Subir a YouTube</h2>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={labelStyle}>TITULO:</label>
-            <input type="text" defaultValue={videoResult.metadata?.title || songTitle} style={inputStyle} id="yt-title" />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={labelStyle}>DESCRIPCION:</label>
-            <textarea defaultValue={videoResult.metadata?.description || ''} rows={5} style={{ ...inputStyle, resize: 'vertical' }} id="yt-desc" />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={labelStyle}>TAGS (separados por coma):</label>
-            <input type="text" defaultValue={videoResult.metadata?.tags?.join(', ') || ''} style={inputStyle} id="yt-tags" />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={labelStyle}>PRIVACIDAD:</label>
-            <select defaultValue="unlisted" style={inputStyle} id="yt-privacy">
-              <option value="public">Publico</option>
-              <option value="unlisted">No listado</option>
-              <option value="private">Privado</option>
-            </select>
-          </div>
-          <button className="btn-primary" onClick={async () => {
-            const titleEl = document.getElementById('yt-title') as HTMLInputElement;
-            const descEl = document.getElementById('yt-desc') as HTMLTextAreaElement;
-            const tagsEl = document.getElementById('yt-tags') as HTMLInputElement;
-            const privEl = document.getElementById('yt-privacy') as HTMLSelectElement;
-            
-            try {
-              const formData = new FormData();
-              formData.append('videoPath', videoResult.videoUrl);
-              formData.append('title', titleEl.value);
-              formData.append('description', descEl.value);
-              formData.append('tags', tagsEl.value);
-              formData.append('privacyStatus', privEl.value);
-              if (videoResult.customThumbnail) {
-                formData.append('thumbnail', videoResult.customThumbnail);
-              }
-
-              const res = await fetch('/api/song/upload-youtube', {
-                method: 'POST',
-                body: formData,
-              });
-              const data = await res.json();
-              if (data.needsAuth) {
-                window.open(data.authUrl, '_blank');
-                alert('Autenticate en la ventana que se abrio. Despues vuelve y intenta de nuevo.');
-              } else if (data.success) {
-                alert('Video subido! URL: ' + data.videoUrl);
-              } else {
-                alert('Error: ' + (data.message || 'Fallo la subida'));
-              }
-            } catch (err: any) {
-              alert('Error: ' + err.message);
-            }
-          }}>
-            Subir a YouTube
-          </button>
-        </div>
+        <YouTubeUploadStep
+          videoResult={videoResult}
+          setVideoResult={setVideoResult}
+          songTitle={songTitle}
+        />
       )}
     </div>
   );
