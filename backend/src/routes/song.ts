@@ -474,10 +474,29 @@ async function generateSongMetadata(title: string, loveType: string, lyrics: str
         model: 'gpt-4o-mini',
         messages: [{
           role: 'system',
-          content: 'Genera metadata COMPLETA para YouTube de una cancion romantica. Responde JSON: {"title":"titulo SEO max 70 chars con emojis","description":"descripcion 500+ chars con CTA, emojis, keywords","hashtags":"#tag1 #tag2... 20+ hashtags","tags":["tag1","tag2"...15 tags separados],"bestTime":"mejor hora para publicar","category":"Music"}'
+          content: `Eres un experto en SEO de YouTube para canales de musica. Genera metadata ULTRA COMPLETA y optimizada para maximo alcance.
+
+Responde SOLO JSON con esta estructura exacta:
+{
+  "title": "Titulo SEO con emojis y keywords (max 80 chars). Formato: TITULO 💔 | Keyword Principal | Keyword Secundaria",
+  "description": "Descripcion de 1500+ caracteres. Debe incluir:\\n- Parrafo emotivo sobre la cancion (3-4 lineas)\\n- Seccion LETRA COMPLETA (primeros versos)\\n- Keywords en MAYUSCULAS separadas por | (ej: MUSICA ROMANTICA | BALADA TRISTE | CANCION DE DESAMOR)\\n- CTAs (suscribete, comenta, comparte)\\n- Emojis en cada seccion\\n- Timestamps ficticios (00:00 Intro, 00:30 Verso 1, etc)\\n- Links a redes sociales placeholder\\n- Seccion de creditos\\n- Disclaimer de IA",
+  "hashtags": "30 hashtags relevantes separados por espacio, mezcla populares + nicho. Ej: #MusicaRomantica #Balada #DesamorMusical #CancionTriste #LoFiLatin etc",
+  "tags": ["30 tags separados", "mezcla espanol e ingles", "keywords largas y cortas", "incluir: musica romantica 2024", "balada para llorar", "cancion de desamor nueva", etc],
+  "bestTime": "Dia y hora optima con explicacion corta",
+  "category": "Music",
+  "keywords": "20 KEYWORDS EN MAYUSCULAS separadas por | para la seccion de la descripcion"
+}
+
+REGLAS:
+- El titulo debe tener formato clickbait emotivo con emojis
+- La descripcion debe ser LARGA (1500+ chars) con secciones claras
+- Incluir keywords en MAYUSCULAS en la descripcion para SEO
+- Mezclar hashtags populares (#Music #Love) con nicho (#BaladaRomantica2024)
+- Tags deben incluir variaciones: singular/plural, con/sin tildes, espanol/ingles
+- Agregar timestamps falsos para engagement (YouTube los muestra como capitulos)`
         }, {
           role: 'user',
-          content: `Cancion: "${title}", tipo: ${loveType}, letra: ${lyrics.slice(0, 300)}`
+          content: `Cancion: "${title}", tipo de amor: ${loveType}\n\nPrimeros versos de la letra:\n${lyrics.slice(0, 500)}`
         }],
         temperature: 0.7,
       }),
@@ -488,10 +507,10 @@ async function generateSongMetadata(title: string, loveType: string, lyrics: str
     try {
       return JSON.parse(content.replace(/```(?:json)?\s*([\s\S]*?)```/, '$1').trim().replace(/,\s*([}\]])/g, '$1'));
     } catch {
-      return { title: `${title} | Cancion romantica`, description: `${title} - Balada que llega al alma.\n\nSuscribete y activa la campanita.\nComenta si te hizo llorar.\n\n${lyrics.slice(0, 200)}`, hashtags: '#musica #balada #romantica #amor #desamor #cancion #llorar', tags: ['musica romantica', 'balada', 'cancion triste', loveType], bestTime: 'Viernes 6-8pm', category: 'Music' };
+      return { title: `${title} 💔 | BALADA ROMANTICA | Cancion de Desamor 2024`, description: `${title} - Una balada que llega al alma.\n\n🎵 Esta cancion habla sobre ${loveType}, ese sentimiento que todos hemos vivido alguna vez.\n\n📝 LETRA:\n${lyrics.slice(0, 400)}\n\n━━━━━━━━━━━━━━━━━━━━━━\n🔑 KEYWORDS:\nMUSICA ROMANTICA | BALADA TRISTE | CANCION DE DESAMOR | AMOR PERDIDO | MUSICA PARA LLORAR | CANCIONES TRISTES 2024\n━━━━━━━━━━━━━━━━━━━━━━\n\n⏱️ Timestamps:\n00:00 Intro\n00:30 Verso 1\n01:15 Pre-Coro\n01:45 Coro\n02:30 Verso 2\n03:15 Bridge\n03:45 Coro Final\n\n━━━━━━━━━━━━━━━━━━━━━━\n\n💜 Si esta cancion te llego al corazon:\n👉 SUSCRIBETE y activa la 🔔\n👉 Dale LIKE 👍 si te hizo sentir algo\n👉 COMENTA que parte te llego mas\n👉 COMPARTE con alguien que necesite escucharla\n\n━━━━━━━━━━━━━━━━━━━━━━\n\n🎬 Creditos:\n🎵 Musica: Creada con IA\n🎨 Imagenes: Generadas con IA\n📹 Video: YT Automaton\n\n⚠️ Este contenido fue creado con asistencia de inteligencia artificial.\n\n© 2024 Todos los derechos reservados`, hashtags: '#MusicaRomantica #Balada #Desamor #CancionTriste #MusicaParaLlorar #Amor #Romantica #BaladaRomantica #CancionDeAmor #MusicaEnEspanol #NuevaMusica #CancionesTriste2024 #LoFi #Heartbreak #LoveSong #SadSong #SpanishMusic #Latin #Musica #CancionNueva #AmorPerdido #Despedida #Soledad #MusicaLatina #Viral #ParaTi #FYP #MusicaIA #AIMusic #NuevaCancion', tags: ['musica romantica', 'balada', 'cancion triste', 'desamor', 'musica para llorar', 'cancion de amor', 'balada romantica 2024', 'musica en español', 'canciones tristes', 'love song spanish', 'sad song', 'heartbreak song', 'latin ballad', loveType, title.toLowerCase(), 'musica romantica 2024', 'nueva musica', 'cancion nueva', 'balada para llorar', 'musica latina'], bestTime: 'Viernes 6-8pm o Domingo 10am-12pm (mayor engagement emocional)', category: 'Music', keywords: 'MUSICA ROMANTICA | BALADA TRISTE | CANCION DE DESAMOR | AMOR PERDIDO | MUSICA PARA LLORAR | CANCIONES TRISTES 2024 | NUEVA MUSICA | BALADA EN ESPAÑOL' };
     }
   } catch {
-    return { title: `${title} | Balada romantica`, description: 'Suscribete para mas canciones', hashtags: '#musica #balada #romantica #amor', tags: ['musica', 'balada', 'romantica'], bestTime: 'Viernes 6-8pm', category: 'Music' };
+    return { title: `${title} 💔 | Balada Romantica | Musica para Llorar 2024`, description: `${title}\n\n🎵 MUSICA ROMANTICA | BALADA TRISTE | CANCION DE DESAMOR\n\nSuscribete para mas canciones 🔔\n\n${lyrics.slice(0, 300)}`, hashtags: '#MusicaRomantica #Balada #Desamor #CancionTriste #MusicaParaLlorar #Amor #NuevaMusica #Latin #Musica #Viral', tags: ['musica romantica', 'balada', 'romantica', 'desamor', 'cancion triste', 'musica para llorar', loveType, 'nueva musica 2024'], bestTime: 'Viernes 6-8pm', category: 'Music', keywords: 'MUSICA ROMANTICA | BALADA TRISTE | CANCION DE DESAMOR' };
   }
 }
 
@@ -669,9 +688,9 @@ async function downloadPexelsVideo(query: string, outputPath: string) {
 /**
  * POST /api/song/upload-youtube
  * Uploads a video to YouTube using OAuth2.
- * Body (FormData): videoPath, title, description, tags, privacyStatus
+ * Accepts both JSON and FormData (for thumbnail upload).
  */
-router.post('/upload-youtube', async (req: Request, res: Response) => {
+router.post('/upload-youtube', upload.single('thumbnail'), async (req: Request, res: Response) => {
   try {
     const { videoPath, title, description, tags, privacyStatus } = req.body;
 
