@@ -484,7 +484,8 @@ Responde SOLO JSON con esta estructura exacta:
   "tags": ["30 tags separados", "mezcla espanol e ingles", "keywords largas y cortas", "incluir: musica romantica 2024", "balada para llorar", "cancion de desamor nueva", etc],
   "bestTime": "Dia y hora optima con explicacion corta",
   "category": "Music",
-  "keywords": "20 KEYWORDS EN MAYUSCULAS separadas por | para la seccion de la descripcion"
+  "keywords": "20 KEYWORDS EN MAYUSCULAS separadas por | para la seccion de la descripcion",
+  "thumbnailPrompt": "Prompt en ingles para generar la miniatura con IA. Debe ser UNICO para esta cancion especifica. Describe una escena visual cinematografica que capture la EMOCION EXACTA de la letra. Varia el concepto visual: puede ser una persona sola en la lluvia, manos que se sueltan, una carta quemandose, una ventana de noche, un reloj detenido, flores marchitas, etc. SIEMPRE incluir: el titulo de la cancion en texto elegante, iluminacion cinematografica, calidad ultra HD, estilo poster de pelicula. Ejemplo: 'A woman standing alone at a rainy window at night, looking at an old photograph, single candle light reflecting on glass, deep blues and warm ambers, the title [TITULO] in elegant gold script, cinematic movie poster quality, ultra HD, shallow depth of field, emotionally devastating'"
 }
 
 REGLAS:

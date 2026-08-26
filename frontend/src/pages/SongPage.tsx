@@ -339,7 +339,8 @@ export default function SongPage() {
             </p>
             <div style={{ background: '#0f172a', padding: '1rem', borderRadius: 8, position: 'relative', marginBottom: '1rem' }}>
               <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontSize: '0.8rem', color: '#e2e8f0' }}>
-{`Create a professional YouTube thumbnail for a romantic song called "${songTitle || 'My Song'}".
+                {videoResult.metadata?.thumbnailPrompt ||
+`Create a professional YouTube thumbnail for a romantic song called "${songTitle || 'My Song'}".
 
 Include:
 - A beautiful couple with emotional expressions (him looking at the horizon, her with a tear rolling down)
@@ -351,7 +352,12 @@ Include:
 - Dramatic clouds, rain particles visible in golden light`}
               </pre>
               <button style={{ position: 'absolute', top: 8, right: 8, padding: '0.3rem 0.75rem', background: '#6366f1', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.75rem' }}
-                onClick={() => { navigator.clipboard.writeText(`Create a professional YouTube thumbnail for a romantic song called "${songTitle}". Include: a beautiful couple with emotional expressions, cinematic dramatic sunset background, golden hour lighting with lens flare, the title "${songTitle}" in large elegant script font, movie poster composition, ultra HD hyper realistic, dramatic clouds and rain in golden light.`); alert('Prompt copiado!'); }}>
+                onClick={() => {
+                  const prompt = videoResult.metadata?.thumbnailPrompt ||
+                    `Create a professional YouTube thumbnail for a romantic song called "${songTitle}". Include: a beautiful couple with emotional expressions, cinematic dramatic sunset background, golden hour lighting with lens flare, the title "${songTitle}" in large elegant script font, movie poster composition, ultra HD hyper realistic, dramatic clouds and rain in golden light.`;
+                  navigator.clipboard.writeText(prompt);
+                  alert('Prompt copiado!');
+                }}>
                 Copiar Prompt
               </button>
             </div>
