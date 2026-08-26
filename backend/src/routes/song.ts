@@ -478,9 +478,9 @@ async function generateSongMetadata(title: string, loveType: string, lyrics: str
 
 Responde SOLO JSON con esta estructura exacta:
 {
-  "title": "Titulo SEO con emojis y keywords (max 80 chars). Formato: TITULO 💔 | Keyword Principal | Keyword Secundaria",
-  "description": "Descripcion de 1500+ caracteres. Debe incluir:\\n- Parrafo emotivo sobre la cancion (3-4 lineas)\\n- Seccion LETRA COMPLETA (primeros versos)\\n- Keywords en MAYUSCULAS separadas por | (ej: MUSICA ROMANTICA | BALADA TRISTE | CANCION DE DESAMOR)\\n- CTAs (suscribete, comenta, comparte)\\n- Emojis en cada seccion\\n- Timestamps ficticios (00:00 Intro, 00:30 Verso 1, etc)\\n- Links a redes sociales placeholder\\n- Seccion de creditos\\n- Disclaimer de IA",
-  "hashtags": "30 hashtags relevantes separados por espacio, mezcla populares + nicho. Ej: #MusicaRomantica #Balada #DesamorMusical #CancionTriste #LoFiLatin etc",
+  "title": "Titulo SEO unico y creativo (max 80 chars). Debe incluir el nombre de la cancion + 2 keywords ESPECIFICAS al contenido de ESTA cancion (no genericas). Formato: TITULO CANCION 💔 | Keyword Especifica 1 | Keyword Especifica 2. Las keywords deben describir la EMOCION y SITUACION exacta de la letra (ej: 'Te Busco Entre Sombras 💔 | Amor Que Se Fue Sin Despedida | Balada Para Llorar Solo'). NUNCA uses 'DESAMOR' o 'BALADA TRISTE' solos — siempre personaliza con detalles de la cancion.",
+  "description": "Descripcion de 1500+ caracteres. Debe incluir:\n- Parrafo emotivo sobre la cancion (3-4 lineas)\n- Seccion LETRA COMPLETA (primeros versos)\n- Keywords en MAYUSCULAS separadas por | (ej: MUSICA ROMANTICA | BALADA TRISTE | CANCION DE DESAMOR)\n- CTAs (suscribete, comenta, comparte)\n- Emojis en cada seccion\n- Timestamps ficticios (00:00 Intro, 00:30 Verso 1, etc)\n- Links a redes sociales placeholder\n- Seccion de creditos\n- Disclaimer de IA",
+  "hashtags": "15 hashtags relevantes separados por espacio. Los primeros 3 deben ser los MAS especificos de la cancion, luego mezcla populares de musica romantica. Ej: #CenizasYPolvo #AmorQueNoVuelve #BaladaDeDesamor #MusicaRomantica #Balada #CancionTriste #MusicaLatina #DesamorMusical #NuevaMusica #LoFiLatin",
   "tags": ["30 tags separados", "mezcla espanol e ingles", "keywords largas y cortas", "incluir: musica romantica 2024", "balada para llorar", "cancion de desamor nueva", etc],
   "bestTime": "Dia y hora optima con explicacion corta",
   "category": "Music",
